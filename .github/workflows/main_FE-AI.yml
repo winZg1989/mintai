@@ -20,23 +20,23 @@ jobs:
         with:
           python-version: '3.13'
 
-      - name: Create and start virtual environment
-        run: |
-          python -m venv venv
-          source venv/bin/activate
+      - name: Create virtual environment
+        run: python -m venv venv
       
       - name: Install dependencies
-        run: pip install -r requirements.txt
-
-      - name: Create deployment files
         run: |
-          # Create deployment script
-          cat > deploy.sh << 'EOF'
-          #!/bin/bash
+          source venv/bin/activate
           pip install -r requirements.txt
-          EOF
           
-          chmod +x deploy.sh
+      - name: Create deployment configuration
+        run: |
+          # 创建部署配置文件
+          echo '[config]' > .deployment
+          echo 'SCM_COMMAND_IDLE_TIMEOUT = 1800' >> .deployment
+          echo 'SCM_LOGSTREAM_TIMEOUT = 1800' >> .deployment
+          
+          # 创建启动文件
+          echo 'python -m gunicorn app:app -b 0.0.0.0:$PORT --workers 2 --threads 4 --timeout 60' > startup.txt
 
       - name: Upload artifact for deployment jobs
         uses: actions/upload-artifact@v4
@@ -59,15 +59,11 @@ jobs:
         with:
           name: python-app
       
-      - name: Clean up previous deployment files
+      - name: Clean up build files
         run: |
-          rm -f .deployment
-          rm -f deploy.cmd
-          rm -rf .python_packages
-      
-      - name: Create startup command
-        run: |
-          echo "python -m gunicorn app:app -b 0.0.0.0:\$PORT --workers 2 --threads 4 --timeout 60" > startup.txt
+          rm -rf venv
+          rm -rf __pycache__
+          find . -name "*.pyc" -delete
       
       - name: Login to Azure
         uses: azure/login@v2
@@ -76,10 +72,11 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_FC189ED222754FAEAA376A8B92C674D7 }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_4911353947E4413DBDED940179484F62 }}
 
-      - name: 'Deploy to Azure Web App'
+      - name: 'Deploy to Azure Web App using ZIP Deploy'
         uses: azure/webapps-deploy@v3
-        id: deploy-to-webapp
         with:
           app-name: 'FE-AI'
           slot-name: 'Production'
           package: .
+          # 使用 ZIP 部署而不是 OneDeploy
+          deploy-to: 'slot'
