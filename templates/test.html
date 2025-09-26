@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>RAG 知识库问答系统</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .section { margin: 20px 0; padding: 20px; border: 1px solid #ddd; border-radius: 5px; }
+        input[type="file"], input[type="text"] { padding: 8px; margin: 5px 0; width: 100%; }
+        button { padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        #result { margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 4px; }
+        .loading { display: none; color: #007bff; }
+        .error { color: red; }
+        .hit { margin: 10px 0; padding: 10px; background: white; border-radius: 4px; border: 1px solid #ddd; }
+    </style>
+</head>
+<body>
+    <h1>RAG 知识库问答系统</h1>
+    
+    <div class="section">
+        <h2>📁 上传文档</h2>
+        <form id="uploadForm" enctype="multipart/form-data">
+            <input type="file" name="file" accept=".pdf,.docx" required>
+            <button type="submit">上传文档</button>
+        </form>
+        <div id="uploadStatus"></div>
+    </div>
+
+    <div class="section">
+        <h2>🔍 知识库查询</h2>
+        <form id="queryForm">
+            <input type="text" name="query" placeholder="请输入您的问题..." required>
+            <button type="submit">发送查询</button>
+        </form>
+        <div class="loading" id="loading">查询中...</div>
+        <div id="result"></div>
+    </div>
+
+    <script>
+        // 上传文档
+        document.getElementById('uploadForm').onsubmit = async function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            const statusDiv = document.getElementById('uploadStatus');
+            
+            statusDiv.innerHTML = '上传中...';
+            statusDiv.style.color = 'blue';
+
+            try {
+                const response = await fetch('/ingest', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    statusDiv.innerHTML = `✅ 上传成功！文档ID: ${result.doc_id}, 分块数: ${result.chunks}`;
+                    statusDiv.style.color = 'green';
+                } else {
+                    const error = await response.text();
+                    statusDiv.innerHTML = `❌ 上传失败: ${error}`;
+                    statusDiv.style.color = 'red';
+                }
+            } catch (error) {
+                statusDiv.innerHTML = `❌ 网络错误: ${error.message}`;
+                statusDiv.style.color = 'red';
+            }
+        };
+
+    
+    // 查询 - 修复版本
+    document.getElementById('queryForm').onsubmit = async function(e) {
+        e.preventDefault();
+        const query = this.query.value;
+        const resultDiv = document.getElementById('result');
+        const loadingDiv = document.getElementById('loading');
+        
+        loadingDiv.style.display = 'block';
+        resultDiv.innerHTML = '';
+
+        try {
+            console.log('发送查询:', query);
+            const response = await fetch('/query', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({query: query})
+            });
+            
+            console.log('收到响应状态:', response.status);
+            
+            // 先克隆响应以便可以多次读取（如果需要）
+            const responseClone = response.clone();
+            
+            loadingDiv.style.display = 'none';
+            
+            if (response.ok) {
+                const result = await response.json();
+                console.log('解析结果:', result);
+                
+                // 安全地处理结果
+                const answer = result.answer || '无回答';
+                const elapsed = result.elapsed || 0;
+                const hits = result.hits || [];
+                
+                let hitsHTML = '<p>无相关片段</p>';
+                if (hits.length > 0) {
+                    hitsHTML = hits.map((hit, index) => `
+                        <div class="hit">
+                            <strong>片段 ${index + 1} (相似度: ${(hit.score || 0).toFixed(3)}):</strong><br>
+                            ${hit.text || '无内容'}
+                        </div>
+                    `).join('');
+                }
+                
+                resultDiv.innerHTML = `
+                    <h3>回答：</h3>
+                    <p>${answer}</p>
+                    <h3>处理时间：${elapsed}秒</h3>
+                    <h3>相关片段：</h3>
+                    ${hitsHTML}
+                `;
+            } else {
+                console.error('响应错误:', response.status);
+                // 使用克隆的响应来读取错误信息
+                let errorText = '未知错误';
+                try {
+                    const errorData = await responseClone.json();
+                    errorText = errorData.error || errorData.detail || response.statusText;
+                } catch (parseError) {
+                    try {
+                        errorText = await responseClone.text();
+                    } catch (textError) {
+                        errorText = response.statusText;
+                    }
+                }
+                resultDiv.innerHTML = `<div class="error">❌ 查询失败: ${errorText}</div>`;
+            }
+        } catch (error) {
+            console.error('请求错误:', error);
+            loadingDiv.style.display = 'none';
+            resultDiv.innerHTML = `<div class="error">❌ 网络错误: ${error.message}</div>`;
+        }
+    };
+</script>
+</body>
+</html>

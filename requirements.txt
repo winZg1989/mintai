@@ -1,10 +1,18 @@
-Flask==2.3.3
-PyPDF2==3.0.1
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+faiss-cpu==1.7.4
+numpy==1.24.3
+PyMuPDF==1.26.4
+pdfplumber==0.11.7
+pdf2image==1.17.0
+pytesseract==0.3.13
 docx2txt==0.8
-sentence-transformers==2.2.2
-faiss-cpu>=1.11.0
-requests==2.31.0
-werkzeug==2.3.7
-gunicorn==21.2.0
+httpx==0.25.2
+pydantic==1.10.14
 python-dotenv==1.0.0
-numpy>=1.24.3  # 确保 numpy 版本兼容
+python-multipart==0.0.6
+jinja2==3.1.2
+sentence-transformers==2.2.2
+torch==2.0.1
+torchvision==0.15.2
+transformers==4.30.2

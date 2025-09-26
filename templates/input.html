@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>文本输入</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; }
+        .form-group { margin: 15px 0; }
+        input, button { padding: 10px; width: 100%; box-sizing: border-box; }
+    </style>
+</head>
+<body>
+    <h1>文本输入表单</h1>
+    
+    <form action="/submit" method="post">
+        <div class="form-group">
+            <label for="text">输入文本:</label>
+            <input type="text" id="text" name="text" placeholder="请输入一些文字..." required>
+        </div>
+        
+        <button type="submit">提交处理</button>
+    </form>
+
+    <p><a href="/">返回首页</a></p>
+</body>
+</html>
