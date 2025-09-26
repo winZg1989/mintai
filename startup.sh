@@ -3,9 +3,6 @@
 echo "=== Starting RAG Application ==="
 cd /home/site/wwwroot || exit 1
 
-# 添加用户bin目录到PATH
-#export PATH="/root/.local/bin:$PATH"
-
 echo "Using Python: $(which python3)"
 python3 --version
 
@@ -13,16 +10,17 @@ python3 --version
 PORT=${PORT:-8000}
 echo "Using port: $PORT"
 
-# 安装依赖到用户目录
+# 安装依赖
 echo "=== Installing Dependencies ==="
-#python3 -m pip install --user --upgrade pip
-#python3 -m pip install --user -r requirements.txt --no-cache-dir
-
-# 再次确保PATH正确
-#export PATH="/root/.local/bin:$PATH"
+python3 -m pip install --upgrade pip
+python3 -m pip install -r requirements.txt --no-cache-dir
 
 # 等待安装完成
-#sleep 10
+sleep 10
+
+# 检查uvicorn是否安装成功
+echo "=== 检查已安装的包 ==="
+python3 -m pip list | grep uvicorn
 
 # 启动应用
 echo "=== Starting uvicorn Server ==="
